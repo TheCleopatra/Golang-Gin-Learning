@@ -2,10 +2,18 @@ package main
 
 import (
 	"github/deschool-golang/controller"
+	"github/deschool-golang/middleware"
 	"github/deschool-golang/service"
+	"io"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
+
+func setupLogOuput() {
+	f, _ := os.Create("gin.log")
+	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+}
 
 var (
 	videoService    service.VideoService       = service.New()
@@ -13,13 +21,10 @@ var (
 )
 
 func main() {
-	server := gin.Default()
 
-	// server.GET("/test", func(ctx *gin.Context) {
-	// 	ctx.JSON(200, gin.H{
-	// 		"message": "OK!!!",
-	// 	})
-	// })
+	setupLogOuput()
+	server := gin.New()
+	server.Use(gin.Recovery(), middleware.Logger(), middleware.BasicAuth())
 
 	server.GET("/videos", func(ctx *gin.Context) {
 		ctx.JSON(200, VideoController.FindAll())
