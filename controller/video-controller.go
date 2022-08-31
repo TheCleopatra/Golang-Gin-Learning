@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"github/deschool-golang/entity"
-	"github/deschool-golang/service"
-	"github/deschool-golang/validators"
+	"github/golang-gin-learning/entity"
+	"github/golang-gin-learning/service"
+	"github/golang-gin-learning/validators"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

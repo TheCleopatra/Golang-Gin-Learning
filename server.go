@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github/deschool-golang/controller"
-	"github/deschool-golang/middleware"
-	"github/deschool-golang/service"
+	"github/golang-gin-learning/controller"
+	"github/golang-gin-learning/middleware"
+	"github/golang-gin-learning/service"
 	"io"
 	"net/http"
 	"os"
@@ -17,8 +17,12 @@ func setupLogOuput() {
 }
 
 var (
-	videoService    service.VideoService       = service.New()
-	VideoController controller.VideoController = controller.New(videoService)
+	videoService service.VideoService = service.New()
+	loginService service.LoginService = service.NewLoginService()
+	jwtService   service.JWTService   = service.NewJWTService()
+
+	videoController controller.VideoController = controller.New(videoService)
+	loginController controller.LoginController = controller.NewLoginController(loginService, jwtService)
 )
 
 func main() {
@@ -30,16 +34,29 @@ func main() {
 
 	server.LoadHTMLGlob("templates/*.html")
 
-	server.Use(gin.Recovery(), middleware.Logger(), middleware.BasicAuth())
+	// Login Endpoint: Authentication + Token creation
+	server.POST("/login", func(ctx *gin.Context) {
+		token := loginController.Login(ctx)
+		if token != "" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"token": token,
+			})
+		} else {
+			ctx.JSON(http.StatusUnauthorized, nil)
+		}
 
-	apiRoutes := server.Group("/api")
+	})
+
+	server.Use(gin.Recovery(), middleware.Logger())
+
+	apiRoutes := server.Group("/api", middleware.AuthorizeJWT())
 	{
 		apiRoutes.GET("/videos", func(ctx *gin.Context) {
-			ctx.JSON(200, VideoController.FindAll())
+			ctx.JSON(200, videoController.FindAll())
 		})
 
 		apiRoutes.POST("/videos", func(ctx *gin.Context) {
-			err := VideoController.Save(ctx)
+			err := videoController.Save(ctx)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			} else {
@@ -50,7 +67,7 @@ func main() {
 
 	viewRoutes := server.Group("/view")
 	{
-		viewRoutes.GET("/videos", VideoController.ShowAll)
+		viewRoutes.GET("/videos", videoController.ShowAll)
 	}
 
 	server.Run(":8080")

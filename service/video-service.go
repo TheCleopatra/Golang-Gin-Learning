@@ -1,6 +1,6 @@
 package service
 
-import "github/deschool-golang/entity"
+import "github/golang-gin-learning/entity"
 
 type VideoService interface {
 	Save(entity.Video) entity.Video
